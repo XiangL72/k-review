@@ -1,0 +1,114 @@
+# K-Review — Design Document
+
+## Project Overview
+K-Review is a contract analysis platform where users upload contracts and receive structured clause extraction, risk scoring, and plain-language summaries powered by LLM integration.
+
+---
+
+## Phase 1: Basic Monolith MVP
+
+### Tech Stack
+- **Language**: Java 23
+- **Framework**: Spring Boot 3.5.14
+- **Build Tool**: Maven
+- **API Testing**: Bruno
+
+### Architecture
+Phase 1 follows a simple layered architecture:
+
+```
+Client (Bruno / Browser)
+    ↓ HTTP Request
+Controller Layer (@RestController)
+    ↓ method call
+Service Layer (@Service) — Week 2
+    ↓ method call
+In-Memory Storage (ArrayList/HashMap) — no database yet
+```
+
+Database (PostgreSQL) replaces in-memory storage in Week 4.
+
+### API Endpoints
+
+| Method | Path                    | Description                        | Status    |
+|--------|-------------------------|------------------------------------|-----------|
+| POST   | /api/contracts          | Submit contract text for analysis  | ✅ Done   |
+| GET    | /api/contracts          | Retrieve all submitted contracts   | ✅ Done   |
+| GET    | /api/contracts/{id}     | Retrieve a single contract by ID   | ✅ Done   |
+
+### Classes and Responsibilities
+
+| Class                    | Role        | Description                                          |
+|--------------------------|-------------|------------------------------------------------------|
+| KReviewApplication       | Entry Point | Starts Spring Boot and embedded Tomcat server        |
+| ContractController       | Controller  | Handles HTTP requests, stores contracts in ArrayList, routes responses |
+| ContractRequest          | DTO         | Carries incoming JSON data (user's contract text)    |
+| Contract                 | Model       | Represents a stored contract (id, content, createdAt)|
+| ContractService          | Service     | Business logic: clause extraction, data processing (Week 2) |
+
+### Data Model (In-Memory)
+
+**Contract**
+- id (Long) — unique identifier, auto-incremented
+- content (String) — the raw contract text submitted by user
+- createdAt (LocalDateTime) — when the contract was submitted
+
+Note: Data is stored in ArrayList. Restarting the app clears all data. PostgreSQL in Week 4 will make data persistent.
+
+### Design Decisions
+
+| Decision | Why |
+|----------|-----|
+| Spring Boot | Industry standard Java framework; teaches layered architecture pattern transferable to any backend |
+| REST naming convention | URLs describe resources (/api/contracts), HTTP methods describe actions (GET/POST). Clean and industry standard |
+| DTO pattern (ContractRequest) | Separates incoming request shape from internal data model. User sends just content; system adds id and createdAt |
+| Contract as separate model | Stores system-generated fields (id, createdAt) that user doesn't provide. Keeps input and storage separate |
+| Private fields + getters/setters | Encapsulation — controls data access, enables validation, required by Jackson for JSON serialization |
+| In-memory ArrayList storage | Simple and temporary. Learn the API layer first without database complexity. Replace with PostgreSQL in Week 4 |
+| Simple loop for ID lookup | O(n) but temporary — database indexing will handle this in Week 4. Don't optimize what you're about to replace |
+| /api prefix | Separates backend endpoints from frontend routes when we add the UI in Week 3 |
+
+### Key Concepts Learned
+
+| Concept | Where We Used It |
+|---------|-----------------|
+| REST API design | URLs describe resources, HTTP methods describe actions |
+| Annotations | @RestController, @RequestMapping, @GetMapping, @PostMapping tell Spring how to route requests |
+| DTO pattern | ContractRequest carries user input, separate from Contract model |
+| Encapsulation | Private fields + public getters/setters control data access |
+| Deserialization | Jackson auto-converts JSON to Java objects using field names + setters |
+| @RequestBody vs @PathVariable | @RequestBody reads from JSON body, @PathVariable reads from URL path |
+| In-memory vs persistent storage | ArrayList is fast but lost on restart; database needed for persistence |
+
+### Week-by-Week Progress
+
+**Week 1 — Spring Boot & REST API ✅**
+- [x] Generate project at start.spring.io
+- [x] Understand project structure and annotations
+- [x] POST /api/contracts — receive and store contract text
+- [x] GET /api/contracts — return all stored contracts
+- [x] GET /api/contracts/{id} — return single contract by ID
+- [x] Test all endpoints with Bruno
+
+**Week 2 — Domain Logic & Service Layer**
+- [ ] Create ContractService with business logic
+- [ ] Mock clause extraction using regex/string methods
+- [ ] Controller calls Service (separation of concerns)
+- [ ] Return structured JSON with extracted clauses
+
+**Week 3 — Frontend Integration**
+- [ ] Build index.html with textarea and submit button
+- [ ] Use fetch() to call Spring Boot API
+- [ ] Configure CORS in Spring Boot
+- [ ] Display results in browser
+
+**Week 4 — PostgreSQL Persistence**
+- [ ] Install PostgreSQL locally
+- [ ] Configure Spring Data JPA
+- [ ] Create @Entity class
+- [ ] Replace ArrayList with database repository
+- [ ] Full CRUD operations
+
+---
+
+*Last updated: May 10, 2026*
