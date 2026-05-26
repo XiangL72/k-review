@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>K-Review</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 24px;
+            font-size: 16px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        .clause {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .risk-LOW {
+            border-left: 4px solid #22c55e;
+        }
+
+        .risk-MEDIUM {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .risk-HIGH {
+            border-left: 4px solid #ef4444;
+        }
+
+        .summary {
+            background-color: #f1f5f9;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>K-Review</h1>
+<p>Paste your contract text below for analysis.</p>
+
+<textarea id="contractText" placeholder="Paste contract text here..."></textarea>
+<button id="submitBtn" onclick="submitContract()">Analyze Contract</button>
+
+<div id="results"></div>
+
+<script>
+    async function submitContract() {
+        const text = document.getElementById('contractText').value;
+        const resultsDiv = document.getElementById('results');
+        const btn = document.getElementById('submitBtn');
+
+        if (!text.trim()) {
+            resultsDiv.innerHTML = '<p style="color:red;">Please paste contract text first.</p>';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+        resultsDiv.innerHTML = '<p>Processing...</p>';
+
+        try {
+            // Step 1: submit the contract
+            const submitRes = await fetch('/api/contracts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content: text})
+            });
+            const contract = await submitRes.json();
+
+            // Step 2: analyze it
+            const analyzeRes = await fetch(`/api/contracts/${contract.id}/analyze`, {
+                method: 'POST'
+            });
+            const analysis = await analyzeRes.json();
+
+            // Step 3: display results
+            let html = `
+                    <div class="summary">
+                        <strong>Summary:</strong> ${analysis.summary}<br>
+                        <strong>Risk Score:</strong> ${analysis.overallRiskScore}/10
+                    </div>
+                    <h3>Extracted Clauses</h3>
+                `;
+
+            for (const clause of analysis.clauses) {
+                html += `
+                        <div class="clause risk-${clause.riskLevel}">
+                            <strong>${clause.type}</strong> — ${clause.riskLevel}<br>
+                            ${clause.text}
+                        </div>
+                    `;
+            }
+
+            if (analysis.clauses.length === 0) {
+                html += '<p>No clauses detected.</p>';
+            }
+
+            resultsDiv.innerHTML = html;
+        } catch (error) {
+            resultsDiv.innerHTML = '<p style="color:red;">Error connecting to server. Make sure the backend is running.</p>';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Analyze Contract';
+        }
+    }
+</script>
+</body>
+</html>

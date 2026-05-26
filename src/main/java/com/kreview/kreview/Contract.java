@@ -2,8 +2,19 @@ package com.kreview.kreview;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+
+@Entity
 public class Contract {
-  private Long id; //need it to be null before creation
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+  @Column(columnDefinition = "TEXT")
   private String content;
   private LocalDateTime createdAt;
 
@@ -16,6 +27,7 @@ public class Contract {
   }
 
   public String getContent() {
+
     return content;
   }
 

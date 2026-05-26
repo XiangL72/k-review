@@ -33,6 +33,6 @@ public class ContractController {
     if (contract == null) {
       return null;
     }
-    return contractService.analyzeContract(contract.getContent());
+    return contractService.analyzeContract(contract);
   }
 }

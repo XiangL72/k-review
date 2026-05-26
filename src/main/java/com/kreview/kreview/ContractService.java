@@ -1,43 +1,40 @@
 package com.kreview.kreview;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ContractService {
 
-  private List<Contract> contracts = new ArrayList<>();
-  private Long nextId = 1L;
+
+  @Autowired
+  private ContractRepository contractRepository;
+
+  @Autowired
+  private AnalysisResultRepository analysisResultRepository;
 
   public List<Contract> getAllContracts() {
-    return contracts;
+    return contractRepository.findAll();
   }
 
   public Contract submitContract(ContractRequest request) {
     Contract contract = new Contract();
-    contract.setId(nextId);
     contract.setContent(request.getContent());
     contract.setCreatedAt(LocalDateTime.now());
 
-    contracts.add(contract);
-    nextId++;
-
-    return contract;
+    return contractRepository.save(contract);
   }
 
   public Contract getContractById(Long id) {
-    for (Contract contract : contracts) {
-      if (contract.getId().equals(id)) {
-        return contract;
-      }
-    }
-    return null;
+    return contractRepository.findById(id).orElse(null);
   }
 
-  public AnalysisResult analyzeContract(String text) {
+  public AnalysisResult analyzeContract(Contract contract) {
+    String text = contract.getContent();
     List<Clause> clauses = new ArrayList<>();
 
     String[] sentences = text.split("\\.");
@@ -98,6 +95,7 @@ public class ContractService {
     }
 
     AnalysisResult result = new AnalysisResult();
+    result.setContract(contract);  // link to the contract
     result.setClauses(clauses);
     result.setOverallRiskScore(Math.min(riskScore, 10));
     result.setSummary("Analysis found " + clauses.size() + " clauses. "
@@ -105,7 +103,6 @@ public class ContractService {
         : riskScore >= 4 ? "Medium risk contract."
         : "Low risk contract."));
 
-    return result;
+    return analysisResultRepository.save(result);  // save to database
   }
-
 }
