@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Column;
 
 @Entity
 public class AnalysisResult {
@@ -26,6 +27,7 @@ public class AnalysisResult {
   @JoinColumn(name = "analysis_result_id")
   private List<Clause> clauses;
 
+  @Column(columnDefinition = "TEXT")
   private String summary;
   private int overallRiskScore;
 

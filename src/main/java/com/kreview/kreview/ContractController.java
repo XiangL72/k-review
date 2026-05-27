@@ -11,6 +11,8 @@ public class ContractController {
 
   @Autowired
   private ContractService contractService;
+  @Autowired
+  private GeminiService geminiService;
 
   @GetMapping
   public List<Contract> getAllContracts() {
@@ -35,4 +37,12 @@ public class ContractController {
     }
     return contractService.analyzeContract(contract);
   }
+
+  @GetMapping("/test-ai")
+  public String testAi() {
+    return geminiService.analyzeContractWithAI(
+        "This agreement is made between Party A and Party B. All information shared shall remain confidential for 2 years. Either party may terminate this agreement with 7 days written notice. Party B shall indemnify Party A against all claims. Payment of $5000 is due within 30 days."
+    );
+  }
+
 }
