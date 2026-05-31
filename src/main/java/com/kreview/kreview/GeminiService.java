@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.time.Duration;
 
 @Service
 public class GeminiService {
@@ -48,6 +48,7 @@ public class GeminiService {
         .bodyValue(requestBody)
         .retrieve()
         .bodyToMono(String.class)
+        .timeout(Duration.ofSeconds(30))
         .block();
 
     return extractText(response);

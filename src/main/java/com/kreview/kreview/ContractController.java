@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/contracts")
@@ -11,8 +12,7 @@ public class ContractController {
 
   @Autowired
   private ContractService contractService;
-  @Autowired
-  private GeminiService geminiService;
+
 
   @GetMapping
   public List<Contract> getAllContracts() {
@@ -30,19 +30,14 @@ public class ContractController {
   }
 
   @PostMapping("/{id}/analyze")
-  public AnalysisResult analyzeContract(@PathVariable Long id) {
+  public ResponseEntity<?> analyzeContract(@PathVariable Long id) {
     Contract contract = contractService.getContractById(id);
     if (contract == null) {
-      return null;
+      return ResponseEntity.status(404).body("Contract not found");
     }
-    return contractService.analyzeContract(contract);
+    AnalysisResult result = contractService.analyzeContract(contract);
+    return ResponseEntity.ok(result);
   }
 
-  @GetMapping("/test-ai")
-  public String testAi() {
-    return geminiService.analyzeContractWithAI(
-        "This agreement is made between Party A and Party B. All information shared shall remain confidential for 2 years. Either party may terminate this agreement with 7 days written notice. Party B shall indemnify Party A against all claims. Payment of $5000 is due within 30 days."
-    );
-  }
 
 }

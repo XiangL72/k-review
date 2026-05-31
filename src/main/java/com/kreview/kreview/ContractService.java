@@ -35,9 +35,18 @@ public class ContractService {
   }
 
   public AnalysisResult analyzeContract(Contract contract) {
-    String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
-    AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
-    return analysisResultRepository.save(result);
+    try {
+      String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
+      AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
+      return analysisResultRepository.save(result);
+    } catch (Exception e) {
+      AnalysisResult fallback = new AnalysisResult();
+      fallback.setContract(contract);
+      fallback.setClauses(new ArrayList<>());
+      fallback.setSummary("AI analysis failed: " + e.getMessage() + ". Please try again.");
+      fallback.setOverallRiskScore(0);
+      return analysisResultRepository.save(fallback);
+    }
   }
 
 
