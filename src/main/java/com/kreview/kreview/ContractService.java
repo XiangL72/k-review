@@ -36,17 +36,38 @@ public class ContractService {
 
   public AnalysisResult analyzeContract(Contract contract) {
     try {
+      AnalysisResult existing = analysisResultRepository.findByContractId(contract.getId());
+      if (existing != null) {
+        analysisResultRepository.delete(existing);
+      }
+
       String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
       AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
       return analysisResultRepository.save(result);
     } catch (Exception e) {
+      System.out.println("=== ANALYSIS FAILED ===");
+      System.out.println("Error: " + e.getMessage());
+      System.out.println("=== END ERROR ===");
+
       AnalysisResult fallback = new AnalysisResult();
       fallback.setContract(contract);
       fallback.setClauses(new ArrayList<>());
       fallback.setSummary("AI analysis failed: " + e.getMessage() + ". Please try again.");
       fallback.setOverallRiskScore(0);
-      return analysisResultRepository.save(fallback);
+      return fallback;
     }
+  }
+
+  public List<Contract> getAnalyzedContracts() {
+    List<Contract> allContracts = contractRepository.findAll();
+    List<Contract> analyzed = new ArrayList<>();
+    for (Contract contract : allContracts) {
+      AnalysisResult result = analysisResultRepository.findByContractId(contract.getId());
+      if (result != null) {
+        analyzed.add(contract);
+      }
+    }
+    return analyzed;
   }
 
 

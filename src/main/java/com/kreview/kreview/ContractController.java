@@ -39,5 +39,10 @@ public class ContractController {
     return ResponseEntity.ok(result);
   }
 
+  @GetMapping("/analyzed")
+  public List<Contract> getAnalyzedContracts() {
+    return contractService.getAnalyzedContracts();
+  }
+
 
 }

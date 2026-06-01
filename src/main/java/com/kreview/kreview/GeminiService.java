@@ -26,7 +26,6 @@ public class GeminiService {
     ObjectMapper mapper = new ObjectMapper();
     String requestBody;
     try {
-      // Build JSON properly so special characters get escaped
       requestBody = mapper.writeValueAsString(
           java.util.Map.of(
               "contents", java.util.List.of(
@@ -42,21 +41,57 @@ public class GeminiService {
       return "Error building request: " + e.getMessage();
     }
 
-    String response = webClient.post()
-        .uri("/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey)
-        .header("Content-Type", "application/json")
-        .bodyValue(requestBody)
-        .retrieve()
-        .bodyToMono(String.class)
-        .timeout(Duration.ofSeconds(30))
-        .block();
+    int maxRetries = 3;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        String response = webClient.post()
+            .uri("/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey)
+            .header("Content-Type", "application/json")
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(String.class)
+            .timeout(Duration.ofSeconds(30))
+            .block();
 
-    return extractText(response);
+        String text = extractText(response);
+        System.out.println("=== GEMINI RESPONSE (attempt " + attempt + ") ===");
+        System.out.println(text);
+        System.out.println("=== END GEMINI ===");
+        return text;
+      } catch (Exception e) {
+        System.out.println("Attempt " + attempt + " failed: " + e.getMessage());
+        if (attempt < maxRetries) {
+          try {
+            Thread.sleep(2000 * attempt);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+          }
+        } else {
+          throw e;
+        }
+      }
+    }
+    return "Error: all retries failed";
+  }
+
+  private String extractText(String response) {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode root = mapper.readTree(response);
+      return root.path("candidates")
+          .get(0)
+          .path("content")
+          .path("parts")
+          .get(0)
+          .path("text")
+          .asText();
+    } catch (Exception e) {
+      return "Error parsing response: " + e.getMessage();
+    }
   }
 
   private String cleanJsonResponse(String response) {
     String cleaned = response.trim();
-    // Remove ```json and ``` wrapper if present
     if (cleaned.startsWith("```json")) {
       cleaned = cleaned.substring(7);
     } else if (cleaned.startsWith("```")) {
@@ -99,7 +134,11 @@ public class GeminiService {
 
       return result;
     } catch (Exception e) {
-      // AI returned garbage — create a fallback result
+      System.out.println("=== PARSE FAILED ===");
+      System.out.println("Error: " + e.getMessage());
+      System.out.println("Raw JSON was: " + cleaned);
+      System.out.println("=== END PARSE ERROR ===");
+
       AnalysisResult fallback = new AnalysisResult();
       fallback.setContract(contract);
       fallback.setClauses(new ArrayList<>());
@@ -136,21 +175,5 @@ public class GeminiService {
         """.formatted(contractText);
 
     return askGemini(prompt);
-  }
-
-  private String extractText(String response) {
-    try {
-      ObjectMapper mapper = new ObjectMapper();
-      JsonNode root = mapper.readTree(response);
-      return root.path("candidates")
-          .get(0)
-          .path("content")
-          .path("parts")
-          .get(0)
-          .path("text")
-          .asText();
-    } catch (Exception e) {
-      return "Error parsing response: " + e.getMessage();
-    }
   }
 }
