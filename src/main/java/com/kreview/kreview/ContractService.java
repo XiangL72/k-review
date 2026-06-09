@@ -4,19 +4,27 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.kreview.kreview.messaging.ContractAnalysisPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ContractService {
 
+  private final ContractRepository contractRepository;
+  private final AnalysisResultRepository analysisResultRepository;
+  private final GeminiService geminiService;
+  private final ContractAnalysisPublisher contractAnalysisPublisher;
 
-  @Autowired
-  private ContractRepository contractRepository;
-  @Autowired
-  private AnalysisResultRepository analysisResultRepository;
-  @Autowired
-  private GeminiService geminiService;
+  public ContractService(
+      ContractRepository contractRepository,
+      AnalysisResultRepository analysisResultRepository,
+      GeminiService geminiService,
+      ContractAnalysisPublisher contractAnalysisPublisher) {
+    this.contractRepository = contractRepository;
+    this.analysisResultRepository = analysisResultRepository;
+    this.geminiService = geminiService;
+    this.contractAnalysisPublisher = contractAnalysisPublisher;
+  }
 
   public List<Contract> getAllContracts() {
     return contractRepository.findAll();
@@ -43,7 +51,15 @@ public class ContractService {
 
       String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
       AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
-      return analysisResultRepository.save(result);
+      AnalysisResult saved = analysisResultRepository.save(result);
+
+      try {
+        contractAnalysisPublisher.publishAnalysisJob(contract.getId());
+      } catch (Exception publishEx) {
+        System.err.println("Failed to publish analysis message: " + publishEx.getMessage());
+      }
+
+      return saved;
     } catch (Exception e) {
       System.out.println("=== ANALYSIS FAILED ===");
       System.out.println("Error: " + e.getMessage());
@@ -69,6 +85,4 @@ public class ContractService {
     }
     return analyzed;
   }
-
-
 }

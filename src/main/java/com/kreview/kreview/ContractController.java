@@ -2,7 +2,6 @@ package com.kreview.kreview;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
@@ -10,9 +9,11 @@ import org.springframework.http.ResponseEntity;
 @RequestMapping("/api/contracts")
 public class ContractController {
 
-  @Autowired
-  private ContractService contractService;
+  private final ContractService contractService;
 
+  public ContractController(ContractService contractService) {
+    this.contractService = contractService;
+  }
 
   @GetMapping
   public List<Contract> getAllContracts() {
@@ -43,6 +44,4 @@ public class ContractController {
   public List<Contract> getAnalyzedContracts() {
     return contractService.getAnalyzedContracts();
   }
-
-
 }
