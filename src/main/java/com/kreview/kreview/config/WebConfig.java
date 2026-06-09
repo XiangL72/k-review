@@ -1,4 +1,4 @@
-package com.kreview.kreview;
+package com.kreview.kreview.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
