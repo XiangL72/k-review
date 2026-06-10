@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contracts")
@@ -36,8 +37,8 @@ public class ContractController {
     if (contract == null) {
       return ResponseEntity.status(404).body("Contract not found");
     }
-    AnalysisResult result = contractService.analyzeContract(contract);
-    return ResponseEntity.ok(result);
+    String jobId = contractService.submitAnalysisJob(contract);
+    return ResponseEntity.accepted().body(Map.of("jobId", jobId, "status", "PENDING"));
   }
 
   @GetMapping("/analyzed")

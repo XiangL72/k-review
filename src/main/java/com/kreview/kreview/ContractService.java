@@ -1,5 +1,7 @@
 package com.kreview.kreview;
 
+import com.kreview.kreview.jobs.JobStatusService;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
@@ -14,16 +16,19 @@ public class ContractService {
   private final AnalysisResultRepository analysisResultRepository;
   private final GeminiService geminiService;
   private final ContractAnalysisPublisher contractAnalysisPublisher;
+  private final JobStatusService jobStatusService;
 
   public ContractService(
       ContractRepository contractRepository,
       AnalysisResultRepository analysisResultRepository,
       GeminiService geminiService,
-      ContractAnalysisPublisher contractAnalysisPublisher) {
+      ContractAnalysisPublisher contractAnalysisPublisher,
+      JobStatusService jobStatusService) {
     this.contractRepository = contractRepository;
     this.analysisResultRepository = analysisResultRepository;
     this.geminiService = geminiService;
     this.contractAnalysisPublisher = contractAnalysisPublisher;
+    this.jobStatusService = jobStatusService;
   }
 
   public List<Contract> getAllContracts() {
@@ -42,36 +47,14 @@ public class ContractService {
     return contractRepository.findById(id).orElse(null);
   }
 
-  public AnalysisResult analyzeContract(Contract contract) {
-    try {
-      AnalysisResult existing = analysisResultRepository.findByContractId(contract.getId());
-      if (existing != null) {
-        analysisResultRepository.delete(existing);
-      }
+  public String submitAnalysisJob(Contract contract) {
+    String jobId = java.util.UUID.randomUUID().toString();
 
-      String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
-      AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
-      AnalysisResult saved = analysisResultRepository.save(result);
+    jobStatusService.setStatus(jobId, "PENDING");
 
-      try {
-        contractAnalysisPublisher.publishAnalysisJob(contract.getId());
-      } catch (Exception publishEx) {
-        System.err.println("Failed to publish analysis message: " + publishEx.getMessage());
-      }
+    contractAnalysisPublisher.publishAnalysisJob(contract.getId(), jobId);
 
-      return saved;
-    } catch (Exception e) {
-      System.out.println("=== ANALYSIS FAILED ===");
-      System.out.println("Error: " + e.getMessage());
-      System.out.println("=== END ERROR ===");
-
-      AnalysisResult fallback = new AnalysisResult();
-      fallback.setContract(contract);
-      fallback.setClauses(new ArrayList<>());
-      fallback.setSummary("AI analysis failed: " + e.getMessage() + ". Please try again.");
-      fallback.setOverallRiskScore(0);
-      return fallback;
-    }
+    return jobId;
   }
 
   public List<Contract> getAnalyzedContracts() {
