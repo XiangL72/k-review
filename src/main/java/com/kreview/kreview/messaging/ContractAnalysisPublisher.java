@@ -13,10 +13,11 @@ public class ContractAnalysisPublisher {
     this.rabbitTemplate = rabbitTemplate;
   }
 
-  public void publishAnalysisJob(Long contractId) {
+  public void publishAnalysisJob(Long contractId, String jobId) {
+    AnalysisJobMessage message = new AnalysisJobMessage(contractId, jobId);
     rabbitTemplate.convertAndSend(
         RabbitMQConfig.CONTRACT_ANALYSIS_QUEUE,
-        contractId.toString()
+        message
     );
   }
 }
