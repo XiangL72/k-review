@@ -138,13 +138,7 @@ public class GeminiService {
       System.out.println("Error: " + e.getMessage());
       System.out.println("Raw JSON was: " + cleaned);
       System.out.println("=== END PARSE ERROR ===");
-
-      AnalysisResult fallback = new AnalysisResult();
-      fallback.setContract(contract);
-      fallback.setClauses(new ArrayList<>());
-      fallback.setSummary("AI analysis failed. Please try again.");
-      fallback.setOverallRiskScore(0);
-      return fallback;
+      throw new RuntimeException("Failed to parse Gemini response: " + e.getMessage(), e);
     }
   }
 
