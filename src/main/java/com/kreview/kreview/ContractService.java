@@ -68,4 +68,8 @@ public class ContractService {
     }
     return analyzed;
   }
+
+  public AnalysisResult getAnalysisByContractId(Long contractId) {
+    return analysisResultRepository.findByContractId(contractId);
+  }
 }

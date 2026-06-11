@@ -41,6 +41,18 @@ public class ContractController {
     return ResponseEntity.accepted().body(Map.of("jobId", jobId, "status", "PENDING"));
   }
 
+  @GetMapping("/{id}/analysis")
+  public ResponseEntity<?> getAnalysisByContractId(@PathVariable Long id) {
+    AnalysisResult result = contractService.getAnalysisByContractId(id);
+    if (result == null) {
+      return ResponseEntity.status(404).body(Map.of(
+          "error", "No analysis found for this contract",
+          "contractId", id
+      ));
+    }
+    return ResponseEntity.ok(result);
+  }
+
   @GetMapping("/analyzed")
   public List<Contract> getAnalyzedContracts() {
     return contractService.getAnalyzedContracts();
