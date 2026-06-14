@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.util.Map;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/contracts")
@@ -57,4 +58,16 @@ public class ContractController {
   public List<Contract> getAnalyzedContracts() {
     return contractService.getAnalyzedContracts();
   }
+
+  @GetMapping("/search")
+  public ResponseEntity<?> search(@RequestParam String q) {
+    if (q == null || q.trim().isEmpty()) {
+      return ResponseEntity.badRequest().body(Map.of(
+          "error", "Query parameter 'q' is required"
+      ));
+    }
+    List<Contract> results = contractService.searchContracts(q);
+    return ResponseEntity.ok(results);
+  }
+
 }

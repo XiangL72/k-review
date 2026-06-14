@@ -43,6 +43,10 @@ public class ContractService {
     return contractRepository.save(contract);
   }
 
+  public List<Contract> searchContracts(String query) {
+    return contractRepository.searchByText(query);
+  }
+
   public Contract getContractById(Long id) {
     return contractRepository.findById(id).orElse(null);
   }
