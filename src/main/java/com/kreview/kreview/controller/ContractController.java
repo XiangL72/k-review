@@ -1,5 +1,10 @@
-package com.kreview.kreview;
+package com.kreview.kreview.controller;
 
+import com.kreview.kreview.AnalysisResult;
+import com.kreview.kreview.Contract;
+import com.kreview.kreview.ContractRequest;
+import com.kreview.kreview.service.ContractService;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +28,7 @@ public class ContractController {
   }
 
   @PostMapping
-  public Contract submitContract(@RequestBody ContractRequest request) {
+  public Contract submitContract(@Valid @RequestBody ContractRequest request) {
     return contractService.submitContract(request);
   }
 
@@ -35,9 +40,6 @@ public class ContractController {
   @PostMapping("/{id}/analyze")
   public ResponseEntity<?> analyzeContract(@PathVariable Long id) {
     Contract contract = contractService.getContractById(id);
-    if (contract == null) {
-      return ResponseEntity.status(404).body("Contract not found");
-    }
     String jobId = contractService.submitAnalysisJob(contract);
     return ResponseEntity.accepted().body(Map.of("jobId", jobId, "status", "PENDING"));
   }
@@ -45,12 +47,6 @@ public class ContractController {
   @GetMapping("/{id}/analysis")
   public ResponseEntity<?> getAnalysisByContractId(@PathVariable Long id) {
     AnalysisResult result = contractService.getAnalysisByContractId(id);
-    if (result == null) {
-      return ResponseEntity.status(404).body(Map.of(
-          "error", "No analysis found for this contract",
-          "contractId", id
-      ));
-    }
     return ResponseEntity.ok(result);
   }
 

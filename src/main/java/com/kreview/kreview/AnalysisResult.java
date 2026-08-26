@@ -20,7 +20,7 @@ public class AnalysisResult {
   private Long id;
 
   @OneToOne
-  @JoinColumn(name = "contract_id")
+  @JoinColumn(name = "contract_id", unique = true)
   private Contract contract;
 
   @OneToMany(cascade = CascadeType.ALL)

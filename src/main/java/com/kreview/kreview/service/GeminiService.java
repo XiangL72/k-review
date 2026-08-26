@@ -1,5 +1,8 @@
-package com.kreview.kreview;
+package com.kreview.kreview.service;
 
+import com.kreview.kreview.AnalysisResult;
+import com.kreview.kreview.Clause;
+import com.kreview.kreview.Contract;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;

@@ -1,10 +1,10 @@
 package com.kreview.kreview.messaging;
 
 import com.kreview.kreview.AnalysisResult;
-import com.kreview.kreview.AnalysisResultRepository;
 import com.kreview.kreview.Contract;
-import com.kreview.kreview.ContractRepository;
-import com.kreview.kreview.GeminiService;
+import com.kreview.kreview.repository.ContractRepository;
+import com.kreview.kreview.service.ContractService;
+import com.kreview.kreview.service.GeminiService;
 import com.kreview.kreview.config.RabbitMQConfig;
 import com.kreview.kreview.jobs.JobStatusService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -16,17 +16,17 @@ public class ContractAnalysisConsumer {
   private final JobStatusService jobStatusService;
   private final ContractRepository contractRepository;
   private final GeminiService geminiService;
-  private final AnalysisResultRepository analysisResultRepository;
+  private final ContractService contractService;
 
   public ContractAnalysisConsumer(
       JobStatusService jobStatusService,
       ContractRepository contractRepository,
       GeminiService geminiService,
-      AnalysisResultRepository analysisResultRepository) {
+      ContractService contractService) {
     this.jobStatusService = jobStatusService;
     this.contractRepository = contractRepository;
     this.geminiService = geminiService;
-    this.analysisResultRepository = analysisResultRepository;
+    this.contractService = contractService;
   }
 
   @RabbitListener(queues = RabbitMQConfig.CONTRACT_ANALYSIS_QUEUE)
@@ -44,14 +44,9 @@ public class ContractAnalysisConsumer {
         throw new RuntimeException("Contract not found: " + contractId);
       }
 
-      AnalysisResult existing = analysisResultRepository.findByContractId(contractId);
-      if (existing != null) {
-        analysisResultRepository.delete(existing);
-      }
-
       String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
       AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
-      analysisResultRepository.save(result);
+      contractService.replaceAnalysisResult(contractId, result);
 
       jobStatusService.setStatus(jobId, "COMPLETE");
       System.out.println("✅ Worker completed job " + jobId);
@@ -59,6 +54,8 @@ public class ContractAnalysisConsumer {
     } catch (Exception e) {
       jobStatusService.setStatus(jobId, "FAILED");
       System.err.println("❌ Worker failed job " + jobId + ": " + e.getMessage());
+    } finally {
+      jobStatusService.clearActive(contractId);
     }
   }
 }

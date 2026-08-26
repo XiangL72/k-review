@@ -1,13 +1,21 @@
-package com.kreview.kreview;
+package com.kreview.kreview.service;
 
+import com.kreview.kreview.AnalysisResult;
+import com.kreview.kreview.Contract;
+import com.kreview.kreview.ContractRequest;
+import com.kreview.kreview.exception.AnalysisInProgressException;
+import com.kreview.kreview.exception.ResourceNotFoundException;
 import com.kreview.kreview.jobs.JobStatusService;
 
+import com.kreview.kreview.repository.AnalysisResultRepository;
+import com.kreview.kreview.repository.ContractRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
 import com.kreview.kreview.messaging.ContractAnalysisPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ContractService {
@@ -48,11 +56,17 @@ public class ContractService {
   }
 
   public Contract getContractById(Long id) {
-    return contractRepository.findById(id).orElse(null);
+    return contractRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Contract not found: " + id));
   }
 
   public String submitAnalysisJob(Contract contract) {
     String jobId = java.util.UUID.randomUUID().toString();
+
+    if (!jobStatusService.tryMarkActive(contract.getId(), jobId)) {
+      throw new AnalysisInProgressException(
+          "Analysis already in progress for contract: " + contract.getId());
+    }
 
     jobStatusService.setStatus(jobId, "PENDING");
 
@@ -74,6 +88,19 @@ public class ContractService {
   }
 
   public AnalysisResult getAnalysisByContractId(Long contractId) {
-    return analysisResultRepository.findByContractId(contractId);
+    AnalysisResult result = analysisResultRepository.findByContractId(contractId);
+    if (result == null) {
+      throw new ResourceNotFoundException("No analysis found for contract: " + contractId);
+    }
+    return result;
+  }
+
+  @Transactional
+  public void replaceAnalysisResult(Long contractId, AnalysisResult newResult) {
+    AnalysisResult existing = analysisResultRepository.findByContractId(contractId);
+    if (existing != null) {
+      analysisResultRepository.delete(existing);
+    }
+    analysisResultRepository.save(newResult);
   }
 }

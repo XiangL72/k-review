@@ -1,5 +1,6 @@
-package com.kreview.kreview;
+package com.kreview.kreview.repository;
 
+import com.kreview.kreview.Contract;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

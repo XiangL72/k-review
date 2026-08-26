@@ -1,6 +1,10 @@
 package com.kreview.kreview;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class ContractRequest {
+
+  @NotBlank(message = "Contract content must not be blank")
   private String content;
 
 
