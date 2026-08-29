@@ -44,7 +44,9 @@ public class ContractAnalysisConsumer {
         throw new RuntimeException("Contract not found: " + contractId);
       }
 
-      String aiResponse = geminiService.analyzeContractWithAI(contract.getContent());
+      String aiResponse = geminiService.analyzeContractWithAI(
+          contract.getContent(), contract.getContractType(), contract.getPartyRole(),
+          contract.getPartyRoleCustomLabel());
       AnalysisResult result = geminiService.parseAnalysisResponse(aiResponse, contract);
       contractService.replaceAnalysisResult(contractId, result);
 
